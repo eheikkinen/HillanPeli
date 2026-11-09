@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "peli",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5179"],
+      "port": 5179,
+      "autoPort": false
+    }
+  ]
+}

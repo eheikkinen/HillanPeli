@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#d62828">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Hillan peli</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  html, body { text-transform: uppercase; margin: 0; height: 100%; overflow: hidden; background: #fbf7ef;
+    font-family: "Comic Sans MS", "Chalkboard SE", "Comic Neue", system-ui, sans-serif;
+    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; touch-action: none; overscroll-behavior: none; }
+  button { text-transform: inherit; font-family: inherit; }
+  canvas { display: block; width: 100vw; height: 100vh; height: 100dvh; }
+  #hud { position: fixed; top: calc(6px + env(safe-area-inset-top)); left: calc(8px + env(safe-area-inset-left)); right: calc(8px + env(safe-area-inset-right)); display: none; gap: 8px; flex-wrap: wrap;
+    align-items: center; pointer-events: none; color: #b51d1d; font-weight: bold; font-size: 17px; }
+  #hud.show { display: flex; }
+  .box { background: rgba(255,255,255,.88); border: 3px solid #d62828; border-radius: 12px; padding: 1px 10px; }
+  #hud .spacer { flex: 1; }
+  #hud button, #throwBtn { pointer-events: auto; background: #fff; border: 3px solid #d62828; color: #d62828;
+    border-radius: 12px; font: inherit; font-size: 17px; padding: 1px 10px; }
+  #hud #pauseBtn { font-size: 22px; padding: 2px 16px; }
+  #throwBtn { position: fixed; right: calc(16px + env(safe-area-inset-right)); bottom: calc(16px + env(safe-area-inset-bottom)); font-size: 22px; padding: 14px 20px; display: none;
+    border-radius: 40px; box-shadow: 0 3px 0 #8f1414; }
+  #throwBtn.show { display: block; }
+  .overlay { position: fixed; inset: 0; display: none; background: rgba(251,247,239,.94); z-index: 10; overflow-y: auto; touch-action: pan-y; }
+  .overlay.show { display: flex; }
+  .card { text-align: center; color: #b51d1d; max-width: 94vw; padding: 10px calc(12px + env(safe-area-inset-right)) 14px calc(12px + env(safe-area-inset-left)); margin: auto; box-sizing: border-box; }
+  @media (max-height: 430px) { .card h1 { font-size: 34px; } .card h2 { font-size: 24px; margin-bottom: 2px; } .card p { margin: 3px 0; font-size: 15px; }
+    .stars { font-size: 34px; } .btn { padding: 6px 20px; font-size: 19px; margin-top: 6px; } .goals { font-size: 14px; } .goals div { margin: 0; } }
+  #rotateHint { display: none; position: fixed; left: 0; right: 0; bottom: calc(14px + env(safe-area-inset-bottom)); text-align: center; z-index: 5; pointer-events: none; }
+  #rotateHint span { background: #d62828; color: #fff; border-radius: 12px; padding: 4px 12px; font-size: 15px; }
+  @media (orientation: portrait) { #rotateHint.on { display: block; } }
+  .card h1 { font-size: clamp(28px, 8vmin, 60px); margin: 0 0 6px; letter-spacing: 2px; }
+  .card h2 { font-size: clamp(22px, 6vmin, 40px); margin: 0 0 6px; }
+  .card p { font-size: clamp(17px, 4.8vmin, 26px); font-weight: bold; margin: 5px 0; color: #5a2a2a; }
+  .btn { margin: 8px 6px 0; font: inherit; font-size: clamp(18px, 5vmin, 28px); font-weight: bold; color: #fff;
+    background: #d62828; border: none; border-radius: 16px; padding: 8px 26px; box-shadow: 0 4px 0 #8f1414; }
+  .btn.alt { background: #fff; color: #d62828; border: 3px solid #d62828; box-shadow: 0 4px 0 #e8a5a5; }
+  .btn:active { transform: translateY(3px); box-shadow: none; }
+  .stars { font-size: clamp(34px, 10vmin, 64px); letter-spacing: 6px; }
+  .star-off { filter: grayscale(1); opacity: .3; }
+  .goals { text-align: left; display: inline-block; font-size: clamp(14px, 3.8vmin, 20px); color: #5a2a2a; }
+  .goals div { margin: 2px 0; }
+  #levelGrid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 10px 0; }
+  .lvl { width: 92px; height: 82px; border: 3px solid #d62828; border-radius: 14px; background: #fff; color: #d62828;
+    font: inherit; font-weight: bold; font-size: 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .lvl small { font-size: 14px; letter-spacing: 2px; }
+  .lvl.locked { opacity: .35; }
+  .lvl .nm { font-size: 11px; color: #5a2a2a; }
+  .wardrobe { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 6px 0 10px; }
+  .item { width: 74px; height: 70px; border: 3px solid #e2b0b0; border-radius: 12px; background: #fff; font: inherit;
+    font-size: 12px; color: #5a2a2a; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2px; }
+  .item.sel { border-color: #d62828; background: #ffecec; }
+  .item.locked { opacity: .4; }
+  .item .ic { font-size: 26px; line-height: 30px; }
+  .swatch { width: 26px; height: 26px; border-radius: 50%; display: inline-block; border: 2px solid #0002; }
+  #toast { position: fixed; left: 50%; top: 56px; transform: translateX(-50%); background: #d62828; color: #fff;
+    padding: 6px 16px; border-radius: 14px; font-weight: bold; font-size: 18px; display: none; z-index: 20; pointer-events: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <span class="box" id="hLevel"></span>
+  <span class="box" id="hCoins"></span>
+  <span class="box" id="hKeys"></span>
+  <span class="spacer"></span>
+  <span class="box" id="hTime">0:00</span>
+  <button id="pauseBtn">☰</button>
+</div>
+<button id="throwBtn">🪨 Heitä</button>
+<div id="toast"></div>
+<div id="rotateHint"><span>📱↻ KÄÄNNÄ PUHELIN</span></div>
+
+<div class="overlay show" id="menuScreen"><div class="card">
+  <h1>HILLAN PELI</h1>
+  <p>HIIVI. ÄLÄ JÄÄ KIINNI!</p>
+  <p id="menuStats"></p>
+  <button class="btn" id="playBtn">PELAA</button><br>
+  <button class="btn alt" id="editorBtn">🎨 TEE OMA</button>
+  <button class="btn alt" id="shopBtn">🛒 KAUPPA</button>
+  <button class="btn alt" id="wardrobeBtn">👕 VAATTEET</button>
+  <button class="btn alt" id="medalBtn">🏅 MITALIT</button>
+  <button class="btn alt" id="helpBtn">❓ OHJE</button>
+  <button class="btn alt" id="soundBtn">🔊</button>
+</div></div>
+
+<div class="overlay" id="levelsScreen"><div class="card">
+  <h2>KENTÄT</h2>
+  <div id="levelGrid"></div>
+  <button class="btn alt" data-go="menu">← Takaisin</button>
+</div></div>
+
+<div class="overlay" id="introScreen"><div class="card">
+  <h2 id="introTitle"></h2>
+  <p id="introText"></p>
+  <div class="goals">
+    <div>⭐ 🏁 MAALIIN</div>
+    <div>⭐ 🪙 KAIKKI KOLIKOT</div>
+    <div>⭐ 🙈 ÄLÄ JÄÄ NÄKYVIIN</div>
+  </div><br>
+  <button class="btn" id="introGo">ALOITA</button>
+</div></div>
+
+<div class="overlay" id="pauseScreen"><div class="card">
+  <h2>TAUKO</h2>
+  <button class="btn" id="resumeBtn">JATKA</button><br>
+  <button class="btn alt" id="restartBtn">↺ ALUSTA</button>
+  <button class="btn alt" data-go="levels">Kentät</button>
+</div></div>
+
+<div class="overlay" id="caughtScreen"><div class="card">
+  <h1 id="caughtTitle">KIINNI!</h1>
+  <p id="caughtText">Vartija näki sinut. Yritä uudestaan!</p>
+  <button class="btn" id="retryBtn">UUDESTAAN</button>
+  <button class="btn alt" data-go="levels">Kentät</button>
+</div></div>
+
+<div class="overlay" id="winScreen"><div class="card">
+  <h2>🎉 MAALI! 🎉</h2>
+  <div class="stars" id="winStars"></div>
+  <div class="goals" id="winScore"></div>
+  <p id="winExtra"></p>
+  <button class="btn" id="nextBtn">SEURAAVA →</button>
+  <button class="btn alt" id="winShopBtn">🛒 KAUPPA</button>
+  <button class="btn alt" id="againBtn">↺ UUDESTAAN</button>
+  <button class="btn alt" data-go="levels">Kentät</button>
+</div></div>
+
+<div class="overlay" id="wardrobeScreen"><div class="card">
+  <h2>👕 VAATTEET</h2>
+  <p id="wardStars"></p>
+  <p><b>VÄRI</b></p><div class="wardrobe" id="wardColors"></div>
+  <p><b>HATTU</b></p><div class="wardrobe" id="wardHats"></div>
+  <button class="btn alt" data-go="menu">← Takaisin</button>
+</div></div>
+
+<div class="overlay" id="shopScreen"><div class="card">
+  <h2>🛒 KAUPPA</h2>
+  <p id="shopWallet"></p>
+  <p><b>LEMMIKKI</b></p><div class="wardrobe" id="shopPets"></div>
+  <p><b>JÄLKI</b></p><div class="wardrobe" id="shopTrails"></div>
+  <p><b>KIVET</b></p><div class="wardrobe" id="shopBag"></div>
+  <button class="btn" id="shopBack">←</button>
+</div></div>
+
+<div class="overlay" id="editorScreen"></div>
+
+<div class="overlay" id="medalScreen"><div class="card">
+  <h2>🏅 MITALIT</h2>
+  <p id="medalCount"></p>
+  <div class="wardrobe" id="medalGrid"></div>
+  <button class="btn alt" data-go="menu">←</button>
+</div></div>
+
+<div class="overlay" id="helpScreen"><div class="card">
+  <h2>❓ OHJE</h2>
+  <p>👆 VEDÄ SORMELLA. NIIN LIIKUT.</p>
+  <p>🟡 KELTAINEN = VARTIJA NÄKEE.</p>
+  <p>🔑 AVAIN AVAA OVEN.</p>
+  <p>⭐ TÄHDET = UUSIA VAATTEITA.</p>
+  <button class="btn alt" data-go="menu">← Takaisin</button>
+</div></div>
+
+<script src="levels.js"></script>
+<script src="game.js"></script>
+<script src="editor.js"></script>
+</body>
+</html>
