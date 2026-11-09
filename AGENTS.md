@@ -29,7 +29,7 @@ game.js         Engine + UI logic (see sections below).
 editor.js       Level editor (IIFE). Exposes window.openEditor(); calls game globals show(), playCustom(), toast(), beep().
 sw.js           Service worker: network-first (cache: "no-cache"), falls back to cache offline. BUMP `CACHE` VERSION ON EVERY RELEASE.
 manifest.webmanifest, icon-*.png   PWA install.
-netlify.toml    Build = sh tools/build.sh → dist/ (only game files are published). Headers: no-cache, manifest MIME.
+netlify.toml    Build = sh tools/build.sh → dist/ (only game files are published). Headers: no-cache.
 tools/          Dev-only: level checker, timed solver, build script. Never published.
 docs/           Original paper design photo + level design guide.
 ```
